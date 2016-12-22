@@ -5,6 +5,8 @@
   <title>TODO list</title>
   <meta name="description" content="JS Native TODO list">
   <meta name="author" content="Alyonka Shevchenko">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="todowidget/css/styles.css">
   <!-- for correct work of todowidget-component jquery must be included before -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
   <script src="todowidget/main.js"></script>
@@ -14,10 +16,7 @@
   <div id="my-husband-todos"></div>
   <script>
     var myTodos = new TodoWidget("My todos", "#my-todos");
-    myTodos.init();
-
     var myHusbandTodos = new TodoWidget("My husband's todos", "#my-husband-todos");
-    myHusbandTodos.init();
   </script>
 </body>
 </html>

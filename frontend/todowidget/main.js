@@ -1,71 +1,58 @@
 (function( window ) {
 
- // require widget css
-    $('head').append($("<link/>", {
-        rel: "stylesheet",
-        href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css", 
-        crossorigin: "anonymous" 
-    }));
-    $('head').append($("<link/>", {
-        rel: "stylesheet",
-        href: "todowidget/css/styles.css"
-    }));
-
-// create widget constructor
-    function TodoWidget(title, container) {	
-    // initialize widget
+    function TodoWidget(title, container) {
         var widget = this;
-        widget.container = $(container);
-        widget.storageName = container.replace('.', '').replace('#', '');
-        widget.wigetTpl = $.parseHTML(widget.tpl.wigetTpl(title));
-        widget.newTask = $(widget.wigetTpl).find(widget.helpers.WIDGET_SELECTORS.ADD_INPUT_TASK_SELECTOR);
-        widget.addTask = $(widget.wigetTpl).find(widget.helpers.WIDGET_SELECTORS.ADD_BUTTON_TASK_SELECTOR);
-        widget.taskList = $(widget.wigetTpl).find(widget.helpers.WIDGET_SELECTORS.LIST_TASKS_SELECTOR);
-        widget.showEmplty = $(widget.wigetTpl).find(widget.helpers.WIDGET_SELECTORS.SHOW_EMPTY_SELECTOR);
-
-        widget.init = function(){
-            widget.container.append(widget.wigetTpl);
-            widget.newTask.on("focus keydown", widget.handleFocusInput);
-            widget.newTask.on("keyup", widget.handleAddTask);
-            widget.addTask.on("click", widget.handleAddTask);
-
-            widget.ajaxTpl(
-                widget.helpers.SERVER_DATA.METHOD.GET,
-                widget.helpers.SERVER_DATA.URL + widget.storageName,
-                function(todos) {
-                    $.each( todos, function( key, value ) {
-                        widget.taskList.append($.parseHTML(widget.tpl.todoTpl(value)));
-                        widget.taskList.find(widget.helpers.WIDGET_SELECTORS.LAST_TASK_SELECTOR).attr("data-id", key);
-                    });
-                    widget.taskList.find(widget.helpers.WIDGET_SELECTORS.REMOVE_TASKS_SELECTOR).on("click", widget.handleRemoveTask);
-                }
-            );
-        };
+        widget._container = $(container);
+        widget._storageName = container.replace('.', '').replace('#', '');
+        widget._tpl = $.parseHTML(widget.tpl.main(title));
+        widget._newTask = $(widget._tpl).find(widget.helpers.WIDGET_SELECTORS.ADD_INPUT_TASK_SELECTOR);
+        widget._addTask = $(widget._tpl).find(widget.helpers.WIDGET_SELECTORS.ADD_BUTTON_TASK_SELECTOR);
+        widget._taskList = $(widget._tpl).find(widget.helpers.WIDGET_SELECTORS.LIST_TASKS_SELECTOR);
+        widget._showHasError = $(widget._tpl).find(widget.helpers.WIDGET_SELECTORS.SHOW_HAS_ERROR_SELECTOR);
 
      // add task methods
-        widget.handleAddTask = function(e) {
-            if ($(this).prop("tagName").toLowerCase() === widget.helpers.WIDGET_SELECTORS.ADD_INPUT_TASK_SELECTOR && e.keyCode !== 13) {                
+        widget._onClickAndKeyupAddTask = function(e) {
+            if ($(e.target).prop("tagName").toLowerCase() === widget.helpers.WIDGET_SELECTORS.ADD_INPUT_TASK_SELECTOR && e.keyCode !== 13) {
                 return;
             }
-            widget.serverAddTodo(widget.newTask.val());
+            widget.serverAddTodo(widget._newTask.val());
         };
      // remove task methods
-        widget.handleRemoveTask = function() {            
-            widget.serverRemoveTodo($(this).parent().attr("data-id"));
-            $(this).parent().remove();
+        widget._onClickRemoveTask = function(e) {
+            var el = (e.target.parentNode.className === widget.helpers.WIDGET_SELECTORS.CURRENT_TASK_CLASS) ? e.target.parentNode : e.target.parentNode.parentNode;
+            widget.serverRemoveTodo($(el).attr("data-id"));
+            $(el).find(widget.helpers.WIDGET_SELECTORS.REMOVE_TASKS_SELECTOR).off("click", widget._onClickRemoveTask);
+            $(el).remove();
         };
      // reset has-error class
-        widget.handleFocusInput = function() {
-            widget.handleShowEmpty(widget.helpers.HAS_ERROR_CLASS.REMOVE);
+        widget._onFocusInput = function() {
+            widget._manageHasErrorClass(widget.helpers.HAS_ERROR_CLASS.REMOVE);
         };
      // manage has-error class
-        widget.handleShowEmpty = function(flag) {
+        widget._manageHasErrorClass = function(flag) {
             if (flag === widget.helpers.HAS_ERROR_CLASS.ADD) {
-                widget.showEmplty.addClass("has-error");
+                widget._showHasError.addClass("has-error");
             } else {
-                widget.showEmplty.removeClass("has-error");
+                widget._showHasError.removeClass("has-error");
             }
         };
+
+     // initialize widget
+        widget._container.append(widget._tpl);
+        widget._newTask.on("focus keydown", widget._onFocusInput);
+        widget._newTask.on("keyup", widget._onClickAndKeyupAddTask);
+        widget._addTask.on("click", widget._onClickAndKeyupAddTask);
+        widget.ajaxTpl(
+             widget.helpers.SERVER_DATA.METHOD.GET,
+             widget.helpers.SERVER_DATA.URL + widget._storageName,
+             function(todos) {
+                  $.each( todos, function( key, value ) {
+                        widget._taskList.append($.parseHTML(widget.tpl.todo(value)));
+                        widget._taskList.find(widget.helpers.WIDGET_SELECTORS.LAST_TASK_SELECTOR).attr("data-id", key);
+                  });
+                  widget._taskList.find(widget.helpers.WIDGET_SELECTORS.REMOVE_TASKS_SELECTOR).on("click", widget._onClickRemoveTask);
+             }
+        );
     }
 
     TodoWidget.prototype.helpers = {
@@ -77,7 +64,8 @@
             LAST_TASK_SELECTOR: 'li:last-child',
             REMOVE_TASK_SELECTOR: 'li:last-child .remove-task',        
             REMOVE_TASKS_SELECTOR: '.remove-task',
-            SHOW_EMPTY_SELECTOR: '.form-group'
+            SHOW_HAS_ERROR_SELECTOR: '.form-group',
+            CURRENT_TASK_CLASS: 'todo-task'
         },
      // msg-error-class actions
         HAS_ERROR_CLASS: {
@@ -96,7 +84,7 @@
     
     TodoWidget.prototype.tpl = {
      // functions for creating widget templates
-        wigetTpl: function(title) {
+        main: function(title) {
             return [
                 '<div class="container">',
                 '<div class="row">',
@@ -122,7 +110,7 @@
                 '</div>'
             ].join('');
         },
-        todoTpl: function(desc) {
+        todo: function(desc) {
             return [
                 '<li class="todo-task">',
                 '<span class="todo-desc">' + desc + '</span>',
@@ -139,17 +127,17 @@
         var widget = this;
         this.ajaxTpl(
             this.helpers.SERVER_DATA.METHOD.POST,
-            this.helpers.SERVER_DATA.URL + this.storageName + '?desc=' + todoDesc,
+            this.helpers.SERVER_DATA.URL + this._storageName + '?desc=' + todoDesc,
             function(todoId) {
-                widget.handleShowEmpty(widget.helpers.HAS_ERROR_CLASS.REMOVE);
-                widget.taskList.append($.parseHTML(widget.tpl.todoTpl(todoDesc)));
-                widget.newTask.val('');
-                widget.taskList.find(widget.helpers.WIDGET_SELECTORS.LAST_TASK_SELECTOR).attr("data-id", todoId);
-                widget.taskList.find(widget.helpers.WIDGET_SELECTORS.REMOVE_TASK_SELECTOR).on("click", widget.handleRemoveTask);
+                widget._manageHasErrorClass(widget.helpers.HAS_ERROR_CLASS.REMOVE);
+                widget._taskList.append($.parseHTML(widget.tpl.todo(todoDesc)));
+                widget._newTask.val('');
+                widget._taskList.find(widget.helpers.WIDGET_SELECTORS.LAST_TASK_SELECTOR).attr("data-id", todoId);
+                widget._taskList.find(widget.helpers.WIDGET_SELECTORS.REMOVE_TASK_SELECTOR).on("click", widget._onClickRemoveTask);
             },
             function(xhr) {
                 if (xhr.status === 400){
-                    widget.handleShowEmpty(widget.helpers.HAS_ERROR_CLASS.ADD);
+                    widget._manageHasErrorClass(widget.helpers.HAS_ERROR_CLASS.ADD);
                 }
             }
         );
@@ -157,7 +145,7 @@
     TodoWidget.prototype.serverRemoveTodo = function(todoId) {
         this.ajaxTpl(
             this.helpers.SERVER_DATA.METHOD.POST,
-            this.helpers.SERVER_DATA.URL + this.storageName + '?id=' + todoId
+            this.helpers.SERVER_DATA.URL + this._storageName + '?id=' + todoId
         );
     };
 
