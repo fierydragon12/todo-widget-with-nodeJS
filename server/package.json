@@ -1,0 +1,8 @@
+{
+  "name": "noderest",
+  "version": "1.0.0",
+  "description": "Node Rest API for Todo App",
+  "dependencies": {
+    "express": "^4.14.0"
+  }
+}

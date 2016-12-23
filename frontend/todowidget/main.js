@@ -18,11 +18,14 @@
         },
         // server request data
         SERVER_DATA: {
-            URL: 'http://localhost:1337/',
+            URL: 'http://localhost:1337',
             METHOD: {
                 GET: 'GET',
                 POST: 'POST'
-            }
+            },
+            FETCH_ROUTE: '/fetch-todos/',
+            POST_ROUTE: '/post-todo/',
+            DELETE_ROUTE: '/delete-todo/'
         }
     };
 
@@ -68,7 +71,7 @@
         widget._addTask.on("click", widget._onClickAndKeyupAddTask);
         $.ajax({
             type: HELPERS.SERVER_DATA.METHOD.GET,
-            url: HELPERS.SERVER_DATA.URL + widget._storageName,
+            url: HELPERS.SERVER_DATA.URL + HELPERS.SERVER_DATA.FETCH_ROUTE + widget._storageName,
             crossDomain: true,
             success: widget._successFetchData.bind(this)
         });
@@ -149,7 +152,7 @@
         widget.todoDesc = todoDesc;
         $.ajax({
             type: HELPERS.SERVER_DATA.METHOD.POST,
-            url:  HELPERS.SERVER_DATA.URL + widget._storageName + '?desc=' + todoDesc,
+            url:  HELPERS.SERVER_DATA.URL + HELPERS.SERVER_DATA.POST_ROUTE + widget._storageName + '/' + todoDesc,
             crossDomain: true,
             success: widget._successAddTodo.bind(widget),
             error:   widget._errorAddTodo.bind(widget)
@@ -160,7 +163,7 @@
         widget.el = el;
         $.ajax({
             type: HELPERS.SERVER_DATA.METHOD.POST,
-            url:  HELPERS.SERVER_DATA.URL + widget._storageName + '?id=' + todoId,
+            url:  HELPERS.SERVER_DATA.URL + HELPERS.SERVER_DATA.DELETE_ROUTE + widget._storageName + '/' + todoId,
             crossDomain: true,
             success: widget._successRemoveTodo.bind(widget)
         });
